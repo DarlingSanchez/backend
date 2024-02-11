@@ -1,5 +1,5 @@
 const { matchedData } = require("express-validator");
-const { productosModel, categoriasModel, impuestosModel, storageModel, unidadesModel } = require("../models");
+const { productosModel, categoriasModel, impuestosModel, storageModel, comprasModel, detalleComprasModel } = require("../models");
 const { handleHttpError } = require("../utils/handleError")
 const ocultarPassword = require('../utils/hidePassword')
 
@@ -167,26 +167,60 @@ const getCodigo = async(req, res) => {
     }
 }
 
-const createItem = async(req, res) => {
+const createItemCompra = async(req, res) => {
+    const user = req.user
+    const body = req.body;
+    console.log("compras", body)
     try {
-        const body = matchedData(req);
-        console.log(body)
-            // Verificar si el producto con el mismo código ya existe
-        const codigoDuplicado = await productosModel.findOne({
-            where: { Codigo: body.Codigo }
-        });
-
-        if (codigoDuplicado) {
-            // Manejar el caso de duplicado             
-            handleHttpError(res, "EL CODIGO QUE INGRESO YA EXISTE");
-            return;
+        dataRaw = {
+            Usuario_ID: user.id,
+            Proveedor_ID: body.Proveedor_ID,
+            N_FacturaProveedor: body.N_FacturaProveedor,
+            SubTotal: body.SubTotal,
+            Descuento: body.Descuento,
+            Impuesto: body.Impuesto,
+            Total: body.Total
         }
-        const data = await productosModel.create(body);
+        const data = await comprasModel.create(dataRaw);
         res.send(data);
+        //res.send({ a: 1 });
     } catch (e) {
-        handleHttpError(res, `ERROR AL GUARDAR EL NUEVO PRODUCTO ${e}`);
+        handleHttpError(res, `ERROR AL GUARDAR LA COMPRA ${e}`);
     }
 }
+const createItemDetalleCompra = async(req, res) => {
+    const user = req.user;
+    const body = req.body;
+    console.log("detalle compras", body)
+
+    try {
+
+        // Iterar sobre el array de productos y crear cada detalle de compra
+        const detalleCompraPromises = body.map(async(producto) => {
+            const detalleCompraData = {
+                Compra_ID: producto.compra_ID,
+                Producto_ID: producto.idProducto,
+                CantidadComprada: producto.cantidad,
+                Precio: producto.precioCompra,
+                SubTotal: producto.subTotalCompra,
+                Descuento: producto.descuento,
+                Impuesto: producto.impuestoCompra,
+                Total: parseFloat(producto.precioCompra) * producto.cantidad
+            };
+
+            return await detalleComprasModel.create(detalleCompraData);
+        });
+
+        // Esperar a que todas las operaciones de creación se completen
+        const detalleCompraResults = await Promise.all(detalleCompraPromises);
+
+        res.send(detalleCompraResults);
+        //res.send({ a: 1 })
+    } catch (e) {
+        handleHttpError(res, `ERROR AL GUARDAR LA COMPRA ${e}`);
+    }
+};
+
 
 const updateItem = async(req, res) => {
     const { id, ...body } = matchedData(req);
@@ -204,79 +238,6 @@ const updateItem = async(req, res) => {
     } catch (e) {
         console.log(e)
         handleHttpError(res, `ERROR AL ACTUALIZAR EL PRODUCTO CON CODIGO ${body.Codigo}`);
-    }
-}
-const patchItemCompra = async(req, res) => {
-    const { body } = req;
-    try {
-        // Iterar sobre el array de productos y crear cada detalle de compra
-        const actualizarProducto = body.map(async(producto) => {
-            const { Stock: stockActual } = await productosModel.findByPk(producto.id, {
-                attributes: ['Stock']
-            });
-
-            console.log(producto.id, stockActual, producto.cantidad)
-            const impuesto = '1.' + producto.impuestoPorcentaje
-            const ganancia = (parseFloat(producto.precioVenta) / parseFloat(impuesto)) - (parseFloat(producto.precioCompra) / parseFloat(impuesto))
-            const stock = parseFloat(producto.cantidad) + parseFloat(stockActual)
-
-            const data = {
-                id: producto.id,
-                Stock: stock,
-                PrecioCompra: producto.precioCompra,
-                PrecioVenta: producto.precioVenta,
-                Ganancia: ganancia
-            };
-
-            //return await detalleComprasModel.create(detalleCompraData);
-            console.log("ACTUALIZANDO")
-            return await productosModel.update(data, {
-                where: { id: data.id }
-            });
-        });
-
-        // Esperar a que todas las operaciones de creación se completen
-        const detalleCompraResults = await Promise.all(actualizarProducto);
-
-        res.send(detalleCompraResults);
-        //res.send({ a: 1 })
-    } catch (e) {
-        handleHttpError(res, `ERROR AL RESTAR INVENTARIO Y MODIFICAR EL PRODUCTO ${e}`);
-    }
-}
-
-const patchItemVenta = async(req, res) => {
-    const { body } = req;
-    try {
-        // Iterar sobre el array de productos y crear cada detalle de venta
-        const actualizarProducto = body.map(async(producto) => {
-            const { Stock: stockActual } = await productosModel.findByPk(producto.id, {
-                attributes: ['Stock']
-            });
-
-            //console.log(producto.id, stockActual, producto.cantidad)
-
-            const stock = parseFloat(stockActual) - parseFloat(producto.cantidad)
-
-            const data = {
-                id: producto.id,
-                Stock: stock,
-            };
-
-            //return await detalleComprasModel.create(detalleCompraData);
-            console.log("ACTUALIZANDO")
-            return await productosModel.update(data, {
-                where: { id: data.id }
-            });
-        });
-
-        // Esperar a que todas las operaciones de creación se completen
-        const detalleCompraResults = await Promise.all(actualizarProducto);
-
-        res.send(detalleCompraResults);
-        //res.send({ a: 1 })
-    } catch (e) {
-        handleHttpError(res, `ERROR AL SUMAR INVENTARIO A LOS PRODUCTOS ${e}`);
     }
 }
 
@@ -302,4 +263,4 @@ const deleteItem = async(req, res) => {
 
 };
 
-module.exports = { getItems, getItem, createItem, updateItem, deleteItem, getID, getCodigo, patchItemCompra, patchItemVenta };
+module.exports = { getItems, getItem, createItemCompra, updateItem, deleteItem, getID, getCodigo, createItemDetalleCompra };

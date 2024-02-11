@@ -38,10 +38,15 @@ CREATE TABLE Proveedores (
     Telefono VARCHAR(20)
 );
 
+-- Agregar una restricción de campo único al campo "RTN" de la tabla "Proveedores"
+ALTER TABLE Proveedores
+ADD RTN VARCHAR(20) AFTER ID,
+ADD CONSTRAINT UQ_Proveedores_RTN UNIQUE (RTN);
+
 -- Crear la tabla Productos
 CREATE TABLE Productos (
     ID INT AUTO_INCREMENT PRIMARY KEY,
-    Codigo VARCHAR(50),
+    Codigo VARCHAR(100),
     NombreDelProducto VARCHAR(100),
     Descripcion TEXT,
     PrecioCompra DECIMAL(10, 2),
@@ -53,20 +58,21 @@ CREATE TABLE Productos (
 -- Crear la tabla Historial_Precios
 CREATE TABLE Historial_Precios (
     ID INT AUTO_INCREMENT PRIMARY KEY,
-    Codigo VARCHAR(50),
-    FechaCambioPrecio DATE,
+    Producto_ID INT,
     PrecioCompra DECIMAL(10, 2),
     PrecioVenta DECIMAL(10, 2),
-    Ganancia DECIMAL(10, 2)
+    CONSTRAINT FK_HistorialPrecios_Productos FOREIGN KEY (Producto_ID) REFERENCES Productos(ID);
 );
+
 
 -- Crear la tabla Ventas
 CREATE TABLE Ventas (
     ID INT AUTO_INCREMENT PRIMARY KEY,
-    FechaVenta DATE,
+    N_Factura VARCHAR(200),
     Usuario_ID INT,
     SubTotal DECIMAL(10, 2),
-    ISV DECIMAL(10, 2),
+    Descuento DECIMAL(10, 2),
+    Impuesto DECIMAL(10, 2),
     Total DECIMAL(10, 2),
     TipoDePago VARCHAR(50),
     CONSTRAINT FK_Ventas_Usuarios FOREIGN KEY (Usuario_ID) REFERENCES Usuarios(ID)
@@ -77,37 +83,49 @@ CREATE TABLE Detalle_Ventas (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     Venta_ID INT,
     Producto_ID INT,
-    CantidadVendida INT,
-    Precio DECIMAL(10, 2), -- Precio unitario del producto
-    ISV DECIMAL(10, 2),   -- Impuesto sobre el valor añadido para ese producto
-    Total DECIMAL(10, 2),  -- Total para ese producto en la venta    
+    CantidadVendida DECIMAL(10, 2),
+    Precio DECIMAL(10, 2), -- precio unitario del producto
+    SubTotal DECIMAL(10, 2), -- subtotal = cantidad * precio
+    Descuento DECIMAL(10, 2), -- descuento otorgado
+    Impuesto DECIMAL(10, 2),   -- Impuesto sobre el valor añadido para ese producto
+    Total DECIMAL(10, 2),  -- Total para ese producto en la venta    (subTotal - descuento) * ISV
     CONSTRAINT FK_DetalleVentas_Ventas FOREIGN KEY (Venta_ID) REFERENCES Ventas(ID),
     CONSTRAINT FK_DetalleVentas_Productos FOREIGN KEY (Producto_ID) REFERENCES Productos(ID)
 );
 
 -- Crear la tabla Compras
 CREATE TABLE Compras (
-    ID INT AUTO_INCREMENT PRIMARY KEY,
-    FechaCompra DATE,
+    ID INT AUTO_INCREMENT PRIMARY KEY,    
     Usuario_ID INT,
     SubTotal DECIMAL(10, 2),
-    ISV DECIMAL(10, 2),
+    Impuesto DECIMAL(10, 2),
     Total DECIMAL(10, 2),
     CONSTRAINT FK_Compras_Usuarios FOREIGN KEY (Usuario_ID) REFERENCES Usuarios(ID)
 );
+
+-- Modificar la tabla Compras para agregar el campo Proveedor_ID después de Usuario_ID
+ALTER TABLE Compras
+ADD Proveedor_ID INT AFTER Usuario_ID,
+ADD N_FacturaProveedor VARCHAR(200) AFTER Proveedor_ID,
+ADD Descuento DECIMAL(10, 2) AFTER SubTotal,
+ADD CONSTRAINT FK_Compras_Proveedores FOREIGN KEY (Proveedor_ID) REFERENCES Proveedores(ID)
 
 -- Crear la tabla Detalle_Compras
 CREATE TABLE Detalle_Compras (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     Compra_ID INT,
     Producto_ID INT,
-    CantidadComprada INT,
-    Precio DECIMAL(10, 2), -- Precio unitario del producto
-    ISV DECIMAL(10, 2),   -- Impuesto sobre el valor añadido para ese producto
-    Total DECIMAL(10, 2),  -- Total para ese producto en la compra  
+    CantidadCoprada DECIMAL(10, 2),
+    Precio DECIMAL(10, 2), -- precio unitario del producto
+    SubTotal DECIMAL(10, 2), -- subtotal = cantidad * precio
+    Descuento DECIMAL(10, 2), -- descuento otorgado
+    Impuesto DECIMAL(10, 2),   -- Impuesto sobre el valor añadido para ese producto
+    Total DECIMAL(10, 2),  -- Total para ese producto en la venta    (subTotal - descuento) * ISV 
     CONSTRAINT FK_DetalleCompras_Compras FOREIGN KEY (Compra_ID) REFERENCES Compras(ID),
     CONSTRAINT FK_DetalleCompras_Productos FOREIGN KEY (Producto_ID) REFERENCES Productos(ID)
 );
+
+
 
 -- Crear la tabla Ordenes_Compra
 CREATE TABLE Ordenes_Compra (
@@ -144,10 +162,11 @@ ADD CONSTRAINT FK_Productos_Impuestos FOREIGN KEY (Impuesto_ID) REFERENCES Impue
 --Agregar los tipos de impuestos
 INSERT INTO Impuestos (NombreImpuesto, Porcentaje)
 VALUES
-('Venta Exenta', 0),
-('Venta Exonerada', 0),
 ('Gravada 15%', 15),
-('Gravada 18%', 18);
+('Gravada 18%', 18),
+('Venta Exenta', 0),
+('Venta Exonerada', 0);
+
 
 --agregar productos ficticios
 INSERT INTO Productos (Codigo, NombreDelProducto,Categoria_ID, Descripcion, PrecioCompra, Impuesto_ID, PrecioVenta, Ganancia, Imagen) 
@@ -185,7 +204,7 @@ VALUES
 
 
 -- Crear la tabla Metodos_Pago
-CREATE TABLE MetodosPago (
+CREATE TABLE Metodos_Pago (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     NombreMetodo VARCHAR(50)
 );
@@ -196,7 +215,16 @@ CREATE TABLE Detalle_Pagos (
     MetodoPago_ID INT,
     MontoPago DECIMAL(10, 2),
     CONSTRAINT FK_DetallePagos_Ventas FOREIGN KEY (Venta_ID) REFERENCES Ventas(ID),
-    CONSTRAINT FK_DetallePagos_MetodosPago FOREIGN KEY (MetodoPago_ID) REFERENCES MetodosPago(ID)
+    CONSTRAINT FK_DetallePagos_MetodosPago FOREIGN KEY (MetodoPago_ID) REFERENCES Metodos_Pago(ID)
+);
+
+-- Crear la tabla Datos_Pagos para almacenar datos de los metodos de pago Tarjeta y transferencias
+CREATE TABLE Datos_Pagos (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    Venta_ID INT,
+    Campo VARCHAR(100),
+    Dato VARCHAR(100),
+    CONSTRAINT FK_Datos_Pago_Ventas FOREIGN KEY (Venta_ID) REFERENCES Ventas(ID)
 );
 
 -- Crear la tabla Clientes
@@ -205,7 +233,8 @@ CREATE TABLE Clientes (
     Nombre VARCHAR(100),
     DNI_RTN VARCHAR(20),
     CorreoElectronico VARCHAR(100),
-    Telefono VARCHAR(15)
+    Telefono VARCHAR(15),
+    Direccion VARCHAR(100)
 );
 
 -- Modificar la tabla Ventas para agregar el campo Cliente_ID
@@ -249,3 +278,57 @@ ADD updatedAt TIMESTAMP NULL DEFAULT NULL;
 ALTER TABLE Historial_Precios
 ADD createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 ADD updatedAt TIMESTAMP NULL DEFAULT NULL;
+
+
+-- Crear tabla Unidades_Medidas
+CREATE TABLE Unidades_Medidas (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    Unidad_Medida VARCHAR(60)
+);
+
+-- Modificar la tabla Productos para agregar los campos Stock y Unidad_Medida
+ALTER TABLE Productos
+ADD Stock DECIMAL(8,2) AFTER Descripcion ,
+ADD UM_ID INT AFTER Stock;
+ADD Activo CHAR(1) AFTER Ganancia;
+ADD CONSTRAINT FK_Productos_UnidadesMedidas FOREIGN KEY (UM_ID) REFERENCES Unidades_Medidas(ID);
+
+
+-- Crear tabla Unidades_Medidas
+CREATE TABLE Archivos (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    Url VARCHAR(255),
+    Nombre VARCHAR(100),
+    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP NULL DEFAULT NULL
+);
+
+-- Modificar la tabla Productos para agregar el campo Archivo_ID
+ALTER TABLE Productos
+ADD Archivo_ID INT AFTER Activo,
+ADD CONSTRAINT FK_ProductosArchivos FOREIGN KEY (Archivo_ID) REFERENCES Archivos(ID)
+
+
+--TABLA DATOS DE LA EMPRESA
+CREATE TABLE Datos_Empresa(
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    Nombre_Legal VARCHAR(200),
+    Nombre_Comercial VARCHAR(200),
+    RTN VARCHAR(15),
+    Direccion VARCHAR(250),
+    Telefono VARCHAR(15),    
+)
+
+
+--TABLA DATOS DE LA FACTURA
+CREATE TABLE Datos_Factura(
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    CAI VARCHAR(50),
+    Punto_Emision VARCHAR(3),
+    Establecimiento VARCHAR(3),
+    Tipo_Documento VARCHAR(2),
+    Cantidad_Aprobada INT,
+    Desde INT,
+    Hasta INT,
+    Fecha_Limite DATE 
+)

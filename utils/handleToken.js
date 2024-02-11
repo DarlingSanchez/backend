@@ -7,7 +7,7 @@ const tokenSign = async(usuario) => {
             Nombre: usuario.Nombre,
         },
         process.env.JWT_SECRET, {
-            expiresIn: "4h",
+            expiresIn: "924h",
         }
     );
 };

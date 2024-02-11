@@ -1,5 +1,5 @@
 const { matchedData } = require("express-validator");
-const { productosModel, categoriasModel, impuestosModel, storageModel, unidadesModel } = require("../models");
+const { productosModel, categoriasModel, impuestosModel, storageModel, ventasModel, detalleVentasModel } = require("../models");
 const { handleHttpError } = require("../utils/handleError")
 const ocultarPassword = require('../utils/hidePassword')
 
@@ -167,26 +167,83 @@ const getCodigo = async(req, res) => {
     }
 }
 
-const createItem = async(req, res) => {
+const createItemVenta = async(req, res) => {
+    const user = req.user
+    const body = req.body;
     try {
-        const body = matchedData(req);
-        console.log(body)
-            // Verificar si el producto con el mismo código ya existe
-        const codigoDuplicado = await productosModel.findOne({
-            where: { Codigo: body.Codigo }
+        // Busca la última factura en tu base de datos
+        const ultimaFactura = await ventasModel.findOne({
+            attributes: ['N_Factura'], // Selecciona solo la columna N_Factura
+            order: [
+                    ['ID', 'DESC']
+                ] // Ordena por ID en orden descendente
         });
 
-        if (codigoDuplicado) {
-            // Manejar el caso de duplicado             
-            handleHttpError(res, "EL CODIGO QUE INGRESO YA EXISTE");
-            return;
+        let nuevoNumeroFactura = 0;
+        if (ultimaFactura) {
+            const ultimoValor = ultimaFactura.N_Factura.split("-").pop();
+
+            const ultimoNumeroFactura = parseInt(ultimoValor, 10);
+            nuevoNumeroFactura = (ultimoNumeroFactura + 1).toString().padStart(8, '0');
+            console.log("Numero de factura actual", ultimoNumeroFactura)
+        } else {
+            // No hay facturas en la base de datos, se crea la primera factura
+            nuevoNumeroFactura = '00000001';
         }
-        const data = await productosModel.create(body);
+
+        nuevoNumeroFactura = '000-001-01-' + nuevoNumeroFactura
+        console.log('Próximo número de factura:', nuevoNumeroFactura);
+
+        // Crear la nueva factura
+        const dataRaw = {
+            Usuario_ID: user.id,
+            Cliente_ID: body.Cliente_ID,
+            N_Factura: nuevoNumeroFactura,
+            SubTotal: body.SubTotal,
+            Descuento: body.Descuento,
+            Impuesto: body.Impuesto,
+            Total: body.Total
+        };
+
+        const data = await ventasModel.create(dataRaw);
         res.send(data);
-    } catch (e) {
-        handleHttpError(res, `ERROR AL GUARDAR EL NUEVO PRODUCTO ${e}`);
+    } catch (error) {
+        handleHttpError(res, `ERROR AL GUARDAR LA VENTA ${error}`);
     }
 }
+
+
+const createItemDetalleVenta = async(req, res) => {
+    const body = req.body;
+    console.log("detalle venta", body)
+
+    try {
+        // Iterar sobre el array de productos y crear cada detalle de venta
+        const detalleVentaPromises = body.map(async(producto) => {
+            const detalleVentaData = {
+                Venta_ID: producto.venta_ID,
+                Producto_ID: producto.idProducto,
+                CantidadVendida: producto.cantidad,
+                Precio: producto.precioVenta,
+                SubTotal: producto.subTotalVenta,
+                Descuento: producto.descuentoVenta,
+                Impuesto: producto.impuestoVenta,
+                Total: parseFloat(producto.precioVenta) * producto.cantidad
+            };
+
+            return await detalleVentasModel.create(detalleVentaData);
+        });
+
+        // Esperar a que todas las operaciones de creación se completen
+        const detalleVentaResults = await Promise.all(detalleVentaPromises);
+
+        res.send(detalleVentaResults);
+        //res.send({ a: 1 })
+    } catch (e) {
+        handleHttpError(res, `ERROR AL GUARDAR EL DETALLE DE LA VENTA ${e}`);
+    }
+};
+
 
 const updateItem = async(req, res) => {
     const { id, ...body } = matchedData(req);
@@ -204,79 +261,6 @@ const updateItem = async(req, res) => {
     } catch (e) {
         console.log(e)
         handleHttpError(res, `ERROR AL ACTUALIZAR EL PRODUCTO CON CODIGO ${body.Codigo}`);
-    }
-}
-const patchItemCompra = async(req, res) => {
-    const { body } = req;
-    try {
-        // Iterar sobre el array de productos y crear cada detalle de compra
-        const actualizarProducto = body.map(async(producto) => {
-            const { Stock: stockActual } = await productosModel.findByPk(producto.id, {
-                attributes: ['Stock']
-            });
-
-            console.log(producto.id, stockActual, producto.cantidad)
-            const impuesto = '1.' + producto.impuestoPorcentaje
-            const ganancia = (parseFloat(producto.precioVenta) / parseFloat(impuesto)) - (parseFloat(producto.precioCompra) / parseFloat(impuesto))
-            const stock = parseFloat(producto.cantidad) + parseFloat(stockActual)
-
-            const data = {
-                id: producto.id,
-                Stock: stock,
-                PrecioCompra: producto.precioCompra,
-                PrecioVenta: producto.precioVenta,
-                Ganancia: ganancia
-            };
-
-            //return await detalleComprasModel.create(detalleCompraData);
-            console.log("ACTUALIZANDO")
-            return await productosModel.update(data, {
-                where: { id: data.id }
-            });
-        });
-
-        // Esperar a que todas las operaciones de creación se completen
-        const detalleCompraResults = await Promise.all(actualizarProducto);
-
-        res.send(detalleCompraResults);
-        //res.send({ a: 1 })
-    } catch (e) {
-        handleHttpError(res, `ERROR AL RESTAR INVENTARIO Y MODIFICAR EL PRODUCTO ${e}`);
-    }
-}
-
-const patchItemVenta = async(req, res) => {
-    const { body } = req;
-    try {
-        // Iterar sobre el array de productos y crear cada detalle de venta
-        const actualizarProducto = body.map(async(producto) => {
-            const { Stock: stockActual } = await productosModel.findByPk(producto.id, {
-                attributes: ['Stock']
-            });
-
-            //console.log(producto.id, stockActual, producto.cantidad)
-
-            const stock = parseFloat(stockActual) - parseFloat(producto.cantidad)
-
-            const data = {
-                id: producto.id,
-                Stock: stock,
-            };
-
-            //return await detalleComprasModel.create(detalleCompraData);
-            console.log("ACTUALIZANDO")
-            return await productosModel.update(data, {
-                where: { id: data.id }
-            });
-        });
-
-        // Esperar a que todas las operaciones de creación se completen
-        const detalleCompraResults = await Promise.all(actualizarProducto);
-
-        res.send(detalleCompraResults);
-        //res.send({ a: 1 })
-    } catch (e) {
-        handleHttpError(res, `ERROR AL SUMAR INVENTARIO A LOS PRODUCTOS ${e}`);
     }
 }
 
@@ -302,4 +286,4 @@ const deleteItem = async(req, res) => {
 
 };
 
-module.exports = { getItems, getItem, createItem, updateItem, deleteItem, getID, getCodigo, patchItemCompra, patchItemVenta };
+module.exports = { getItems, getItem, createItemVenta, updateItem, deleteItem, getID, getCodigo, createItemDetalleVenta };

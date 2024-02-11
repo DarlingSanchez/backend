@@ -18,6 +18,14 @@ const Productos = sequelize.define(
         Descripcion: {
             type: DataTypes.TEXT,
         },
+        Stock: {
+            type: DataTypes.DECIMAL,
+            allowNull: false
+        },
+        UM_ID: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
         PrecioCompra: {
             type: DataTypes.DECIMAL,
             allowNull: false,
@@ -34,13 +42,19 @@ const Productos = sequelize.define(
             type: DataTypes.DECIMAL,
             allowNull: false,
         },
-        Imagen: {
-            type: DataTypes.STRING,
+        Activo: {
+            type: DataTypes.CHAR(["S", "N"]),
+            allowNull: false
+        },
+        Archivo_ID: {
+            type: DataTypes.INTEGER,
             allowNull: false,
         },
     }, {
         timestamps: true,
     }
 );
+
+
 
 module.exports = Productos;

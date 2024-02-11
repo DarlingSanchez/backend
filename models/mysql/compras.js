@@ -1,18 +1,18 @@
 const { sequelize } = require("../../config/mysql");
 const { DataTypes } = require("sequelize");
 
-const Ventas = sequelize.define(
-    "ventas", {
+const Compras = sequelize.define(
+    "compras", {
         Usuario_ID: {
             type: DataTypes.INTEGER,
             allowNull: false,
         },
-        N_Factura: {
-            type: DataTypes.STRING,
+        Proveedor_ID: {
+            type: DataTypes.INTEGER,
             allowNull: false,
         },
-        Cliente_ID: {
-            type: DataTypes.INTEGER,
+        N_FacturaProveedor: {
+            type: DataTypes.STRING,
             allowNull: false,
         },
         SubTotal: {
@@ -34,9 +34,9 @@ const Ventas = sequelize.define(
     }
 );
 
-const DetalleVentas = sequelize.define(
-    "detalle_ventas", {
-        Venta_ID: {
+const DetalleCompras = sequelize.define(
+    "detalle_compras", {
+        Compra_ID: {
             type: DataTypes.INTEGER,
             allowNull: false,
         },
@@ -44,7 +44,7 @@ const DetalleVentas = sequelize.define(
             type: DataTypes.INTEGER,
             allowNull: false,
         },
-        CantidadVendida: {
+        CantidadComprada: {
             type: DataTypes.DECIMAL,
             allowNull: false,
         },
@@ -73,4 +73,4 @@ const DetalleVentas = sequelize.define(
     }
 );
 
-module.exports = { Ventas, DetalleVentas };
+module.exports = { Compras, DetalleCompras };
