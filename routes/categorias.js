@@ -5,10 +5,10 @@ const { getItems, getItem, createItem, updateItem, deleteItem } = require("../co
 const checkAuth = require('../middleware/auth');
 const checkRoleAuth = require('../middleware/rol')
 
-router.get("/", checkAuth, checkRoleAuth([1]), getItems);
+router.get("/", checkAuth, getItems);
 router.get("/:id", checkAuth, validateId, getItem);
-router.post("/", validateObjectDataCreate, createItem);
-router.put("/:id", validateId, validateObjectDataCreate, updateItem);
-router.delete("/:id", validateId, deleteItem);
+router.post("/", checkAuth, validateObjectDataCreate, createItem);
+router.put("/:id", checkAuth, validateId, validateObjectDataCreate, updateItem);
+router.delete("/:id", checkAuth, validateId, deleteItem);
 
 module.exports = router;

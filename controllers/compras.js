@@ -69,7 +69,7 @@ const getItems = async(req, res) => {
         });
 
         ocultarPassword(user);
-        res.send({ data, user });
+        res.send({ data });
     } catch (e) {
         handleHttpError(res, e);
     }

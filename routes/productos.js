@@ -7,11 +7,11 @@ const checkRoleAuth = require('../middleware/rol')
 
 router.post("/verificar/", checkAuth, getID);
 router.post("/codigo/", checkAuth, getCodigo);
-router.get("/", checkAuth, checkRoleAuth([1]), getItems);
+router.get("/", checkAuth, getItems);
 router.get("/:id", checkAuth, validateId, getItem);
 router.post("/", checkAuth, validateObjectDataCreate, createItem);
-router.put("/:id", validateId, validateObjectDataCreate, updateItem);
-router.delete("/:id", validateId, deleteItem);
+router.put("/:id", checkAuth, validateId, validateObjectDataCreate, updateItem);
+router.delete("/:id", checkAuth, validateId, deleteItem);
 router.patch("/", checkAuth, patchItemCompra);
 router.patch("/venta", checkAuth, patchItemVenta);
 

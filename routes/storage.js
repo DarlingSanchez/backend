@@ -3,16 +3,18 @@ const router = express.Router();
 const { getItem, getItems, createItem, deleteItem } = require("../controllers/storage");
 const { validateId } = require("../validators/storage");
 const { upload } = require("../utils/handleStorage");
+const checkAuth = require("../middleware/auth");
 
 
-router.post("/", upload.single("file"), createItem);
 
-router.get("/", validateId, getItems);
+router.post("/", checkAuth, upload.single("file"), createItem);
+
+router.get("/", checkAuth, validateId, getItems);
 
 
-router.get("/:id", validateId, getItem);
+router.get("/:id", checkAuth, validateId, getItem);
 
-router.delete("/:id", validateId, deleteItem);
+router.delete("/:id", checkAuth, validateId, deleteItem);
 
 
 

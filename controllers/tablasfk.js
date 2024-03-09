@@ -11,7 +11,7 @@ const getItemsCategorias = async(req, res) => {
 
         //const usuario = await 
         ocultarPassword(user);
-        res.send({ data, user });
+        res.send({ data });
     } catch (e) {
         handleHttpError(res, e);
     }
@@ -26,7 +26,7 @@ const getItemsImpuestos = async(req, res) => {
 
         //const usuario = await 
         ocultarPassword(user);
-        res.send({ data, user });
+        res.send({ data });
     } catch (e) {
         handleHttpError(res, e);
     }
@@ -41,7 +41,7 @@ const getItemsUnidadesMedidas = async(req, res) => {
 
         //const usuario = await 
         ocultarPassword(user);
-        res.send({ data, user });
+        res.send({ data });
     } catch (e) {
         handleHttpError(res, e);
     }

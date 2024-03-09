@@ -144,7 +144,7 @@ const getItem = async(req, res) => {
             res.send({ "mensaje": `NO EXISTE NINGUN PRODUCTO CON EL ID ${id}` })
         } else {
             ocultarPassword(user);
-            res.send({ data, user });
+            res.send({ data });
         }
 
     } catch (e) {

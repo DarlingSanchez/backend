@@ -10,7 +10,7 @@ const getItems = async(req, res) => {
 
         //const usuario = await 
         ocultarPassword(user);
-        res.send({ data, user });
+        res.send({ data });
     } catch (e) {
         handleHttpError(res, e);
     }
@@ -28,7 +28,7 @@ const getItem = async(req, res) => {
             res.send({ "mensaje": `NO EXISTE NINGUNA CATEGORIA CON EL ID ${id}` })
         } else {
             ocultarPassword(user);
-            res.send({ data, user });
+            res.send({ data });
         }
 
     } catch (e) {

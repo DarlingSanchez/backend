@@ -33,7 +33,7 @@ const getItems = async(req, res) => {
         const user = req.user
         const data = await proveedoresModel.findAll();
         ocultarPassword(user);
-        res.send({ data, user });
+        res.send({ data });
     } catch (e) {
         handleHttpError(res, e);
     }
@@ -52,7 +52,7 @@ const getItem = async(req, res) => {
             res.send({ "mensaje": `NO EXISTE NINGUN PROVEEDOR CON EL ID ${id}` })
         } else {
             ocultarPassword(user);
-            res.send({ data, user });
+            res.send({ data });
         }
     } catch (e) {
         handleHttpError(res, "ERROR AL OBTENER EL PROVEEDOR SOLICITADO");
