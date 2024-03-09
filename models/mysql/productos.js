@@ -38,7 +38,7 @@ const Productos = sequelize.define(
             type: DataTypes.DECIMAL,
             allowNull: false,
         },
-        Ganancia: {
+        PrecioVentaMayoreo: {
             type: DataTypes.DECIMAL,
             allowNull: false,
         },

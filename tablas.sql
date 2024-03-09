@@ -51,6 +51,7 @@ CREATE TABLE Productos (
     Descripcion TEXT,
     PrecioCompra DECIMAL(10, 2),
     PrecioVenta DECIMAL(10, 2),
+    PrecioVentaMayoreo DECIMAL(10, 2),
     Ganancia DECIMAL(10, 2),
     Imagen VARCHAR(255)
 );
@@ -61,6 +62,7 @@ CREATE TABLE Historial_Precios (
     Producto_ID INT,
     PrecioCompra DECIMAL(10, 2),
     PrecioVenta DECIMAL(10, 2),
+    PrecioVentaMayoreo DECIMAL(10, 2),
     CONSTRAINT FK_HistorialPrecios_Productos FOREIGN KEY (Producto_ID) REFERENCES Productos(ID);
 );
 
@@ -316,7 +318,8 @@ CREATE TABLE Datos_Empresa(
     Nombre_Comercial VARCHAR(200),
     RTN VARCHAR(15),
     Direccion VARCHAR(250),
-    Telefono VARCHAR(15),    
+    Telefono VARCHAR(15), 
+    Correo VARCHAR(50)   
 )
 
 
@@ -331,4 +334,12 @@ CREATE TABLE Datos_Factura(
     Desde INT,
     Hasta INT,
     Fecha_Limite DATE 
+)
+
+--TABLA DATOS DE LA FACTURA
+CREATE TABLE Facturas_Impresas(
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    Venta_ID INT,
+    Factura VARCHAR(65000),
+    CONSTRAINT FK_Facturas_Impresas_Ventas FOREIGN KEY (Venta_ID) REFERENCES Ventas(ID)
 )

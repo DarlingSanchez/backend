@@ -31,6 +31,7 @@ const createItem = async(req, res) => {
                 Producto_ID: producto.id,
                 PrecioCompra: producto.precioCompra,
                 PrecioVenta: producto.precioVenta,
+                PrecioVentaMayoreo: producto.totalVentaMayoreo,
             };
 
             return await historialPreciosModel.create(data);

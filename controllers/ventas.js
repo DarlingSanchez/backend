@@ -1,5 +1,5 @@
 const { matchedData } = require("express-validator");
-const { productosModel, categoriasModel, impuestosModel, storageModel, ventasModel, detalleVentasModel } = require("../models");
+const { productosModel, categoriasModel, impuestosModel, storageModel, ventasModel, detalleVentasModel, empresaModel, facturaModel, clientesModel, facturaImpresaModel, usuariosModel } = require("../models");
 const { handleHttpError } = require("../utils/handleError")
 const ocultarPassword = require('../utils/hidePassword')
 
@@ -27,54 +27,85 @@ const getID = async(req, res) => {
 
 };
 
-
 const getItems = async(req, res) => {
     try {
         const user = req.user
-        const dataRaw = await productosModel.findAll({
+        const dataRaw = await ventasModel.findAll({
             include: [{
-                    model: categoriasModel,
-                    as: 'Categoria',
-                    attributes: ['NombreCategoria'],
+                    model: usuariosModel,
+                    as: 'Usuario',
+                    attributes: ['Nombre'],
                 },
                 {
-                    model: impuestosModel,
-                    as: 'Impuesto',
-                    attributes: ['Porcentaje'],
-                },
-                {
-                    model: storageModel,
-                    as: 'Archivo',
-                    attributes: ['Url'],
+                    model: clientesModel,
+                    as: 'Cliente',
+                    attributes: ['Nombre'],
                 }
             ],
 
-            attributes: ['id', 'Codigo', 'NombreDelProducto', 'Descripcion', 'Stock', 'PrecioVenta', 'Activo'],
+            attributes: ['id', 'N_Factura', 'SubTotal', 'Descuento', 'Impuesto', 'Total', 'createdAt'],
+            order: [
+                ['ID', 'DESC']
+            ]
         });
 
         // Asegúrate de que los campos numéricos se envíen como números en lugar de cadenas
         const data = dataRaw.map(item => {
             return {
                 ID: item.id,
-                Codigo: item.Codigo,
-                NombreDelProducto: item.NombreDelProducto,
-                Descripcion: item.Descripcion,
-                Categoria: item.Categoria.NombreCategoria,
-                Stock: parseFloat(item.Stock), // Convierte a número
-                PrecioVenta: parseFloat(item.PrecioVenta), // Convierte a número
-                Impuesto: parseFloat(item.Impuesto.Porcentaje), // Convierte a número
-                Activo: item.Activo,
-                Imagen: item.Archivo.Url,
+                N_Factura: item.N_Factura,
+                Usuario: item.Usuario.Nombre,
+                Cliente: item.Cliente.Nombre,
+                SubTotal: item.SubTotal,
+                Descuento: item.Descuento,
+                Impuesto: item.Impuesto,
+                Total: item.Total,
+                Fecha: item.createdAt,
             };
         });
 
         ocultarPassword(user);
-        res.send({ data, user });
+        res.send(data);
     } catch (e) {
         handleHttpError(res, e);
     }
 };
 
+const getItemsVentaDetalle = async(req, res) => {
+    const { body } = req
+    try {
+        const dataRaw = await detalleVentasModel.findAll({
+            where: { Venta_ID: body.Venta_ID },
+            include: [{
+                model: productosModel,
+                as: 'Producto',
+                attributes: ['NombreDelProducto'],
+            }],
+
+            attributes: ['id', "CantidadVendida", "Precio", "SubTotal", "Descuento", "Impuesto", "Total"],
+
+        });
+
+        // Asegúrate de que los campos numéricos se envíen como números en lugar de cadenas
+        const data = dataRaw.map(item => {
+            return {
+                Venta_ID: item.id,
+                Producto: item.Producto.NombreDelProducto,
+                Cantidad: item.CantidadVendida,
+                Precio: item.Precio,
+                SubTotal: item.SubTotal,
+                Descuento: item.Descuento,
+                Impuesto: item.Impuesto,
+                Total: item.Total,
+            };
+        });
+
+        //ocultarPassword(user);
+        res.send(data);
+    } catch (e) {
+        handleHttpError(res, e);
+    }
+};
 
 const getItem = async(req, res) => {
     try {
@@ -182,7 +213,7 @@ const createItemVenta = async(req, res) => {
         let nuevoNumeroFactura = 0;
         if (ultimaFactura) {
             const ultimoValor = ultimaFactura.N_Factura.split("-").pop();
-
+            console.log("Ultima ", ultimoValor)
             const ultimoNumeroFactura = parseInt(ultimoValor, 10);
             nuevoNumeroFactura = (ultimoNumeroFactura + 1).toString().padStart(8, '0');
             console.log("Numero de factura actual", ultimoNumeroFactura)
@@ -191,7 +222,31 @@ const createItemVenta = async(req, res) => {
             nuevoNumeroFactura = '00000001';
         }
 
-        nuevoNumeroFactura = '000-001-01-' + nuevoNumeroFactura
+        //OBETNER DATOS DE LA EMPRESA DE LA TABLA datos_empresa        
+        const empresa = await empresaModel.findOne({
+            where: { ID: 1 }
+        });
+
+        //OBETNER DATOS DE LA FACTURA DE LA TABLA datos_factura
+        const facturaRaw = await facturaModel.findOne({
+            where: { ID: 1 }
+        });
+        let desde = ''
+        let hasta = ''
+
+        if (facturaRaw) {
+            desde = (facturaRaw.Desde).toString().padStart(8, '0');
+            hasta = (facturaRaw.Hasta).toString().padStart(8, '0');
+        }
+
+        const factura = {
+            CAI: facturaRaw.CAI,
+            Desde: `${facturaRaw.Punto_Emision}-${facturaRaw.Establecimiento}-${facturaRaw.Tipo_Documento}-${desde}`,
+            Hasta: `${facturaRaw.Punto_Emision}-${facturaRaw.Establecimiento}-${facturaRaw.Tipo_Documento}-${hasta}`,
+            Fecha_Limite: facturaRaw.Fecha_Limite
+        }
+
+        nuevoNumeroFactura = `${facturaRaw.Punto_Emision}-${facturaRaw.Establecimiento}-${facturaRaw.Tipo_Documento}-${nuevoNumeroFactura}`
         console.log('Próximo número de factura:', nuevoNumeroFactura);
 
         // Crear la nueva factura
@@ -205,8 +260,21 @@ const createItemVenta = async(req, res) => {
             Total: body.Total
         };
 
-        const data = await ventasModel.create(dataRaw);
-        res.send(data);
+        const encabezadoRaw = await ventasModel.create(dataRaw);
+
+        //OBETNER NOMBRE DEL CLIENTE
+        const cliente = await clientesModel.findOne({
+            where: { ID: encabezadoRaw.Cliente_ID }
+        });
+        // Asegúrate de que los campos numéricos se envíen como números en lugar de cadenas
+        const encabezado = {
+            id: encabezadoRaw.id,
+            N_Factura: encabezadoRaw.N_Factura,
+            RTN_Cliente: cliente.DNI_RTN,
+            Nombre_Cliente: cliente.Nombre,
+            createdAt: encabezadoRaw.createdAt
+        }
+        res.send({ empresa, factura, encabezado });
     } catch (error) {
         handleHttpError(res, `ERROR AL GUARDAR LA VENTA ${error}`);
     }
@@ -220,16 +288,33 @@ const createItemDetalleVenta = async(req, res) => {
     try {
         // Iterar sobre el array de productos y crear cada detalle de venta
         const detalleVentaPromises = body.map(async(producto) => {
-            const detalleVentaData = {
-                Venta_ID: producto.venta_ID,
-                Producto_ID: producto.idProducto,
-                CantidadVendida: producto.cantidad,
-                Precio: producto.precioVenta,
-                SubTotal: producto.subTotalVenta,
-                Descuento: producto.descuentoVenta,
-                Impuesto: producto.impuestoVenta,
-                Total: parseFloat(producto.precioVenta) * producto.cantidad
-            };
+            let detalleVentaData = {}
+            if (producto.tipoVenta === 'D') {
+                detalleVentaData = {
+                    Venta_ID: producto.venta_ID,
+                    Producto_ID: producto.idProducto,
+                    CantidadVendida: producto.cantidad,
+                    Precio: producto.precioVenta,
+                    SubTotal: producto.subTotalVenta,
+                    Descuento: producto.descuentoVenta,
+                    Impuesto: producto.impuestoVenta,
+                    Total: parseFloat(producto.precioVenta) * producto.cantidad,
+                    TipoVenta: producto.tipoVenta
+                };
+            } else {
+                detalleVentaData = {
+                    Venta_ID: producto.venta_ID,
+                    Producto_ID: producto.idProducto,
+                    CantidadVendida: producto.cantidad,
+                    Precio: producto.precioVentaMayoreo,
+                    SubTotal: producto.subTotalVentaMayoreo,
+                    Descuento: producto.descuentoVenta,
+                    Impuesto: producto.impuestoVentaMayoreo,
+                    Total: parseFloat(producto.precioVentaMayoreo) * producto.cantidad,
+                    TipoVenta: producto.tipoVenta
+                };
+            }
+
 
             return await detalleVentasModel.create(detalleVentaData);
         });
@@ -244,46 +329,35 @@ const createItemDetalleVenta = async(req, res) => {
     }
 };
 
+const createFacturaImpresa = async(req, res) => {
+    const body = req.body;
 
-const updateItem = async(req, res) => {
-    const { id, ...body } = matchedData(req);
     try {
-        //const data = await productosModel.findOneAndUpdate(id, body);
-        const [numRowsUpdated] = await productosModel.update(body, {
-            where: { id: id }
-        });
-        if (numRowsUpdated === 1) {
-            res.send({ message: 'EL PRODUCTO SE ACTUALIZO' });
+        const Factura = facturaImpresaModel.create(body);
+        if (Factura) {
+            res.send(true);
         } else {
-            res.status(404).send({ message: 'EL PRODUCTO NO EXISTE' });
+            res.send({ "Error": "Algo salio mal al Guardar factura impresa en DB" });
         }
 
+        //res.send({ a: 1 })
     } catch (e) {
-        console.log(e)
-        handleHttpError(res, `ERROR AL ACTUALIZAR EL PRODUCTO CON CODIGO ${body.Codigo}`);
+        handleHttpError(res, `ERROR AL GUARDAR EL LA FACTURA IMPRESA EN DB ${e}`);
     }
-}
-
-const deleteItem = async(req, res) => {
-    try {
-        req = matchedData(req);
-        const { id } = req;
-        const numDeletedRows = await productosModel.destroy({
-            where: { id: id }
-        });
-
-        if (numDeletedRows === 1) {
-            res.send({ message: 'SE ELIMINO EL PRODUCTO' });
-        } else {
-            res.status(404).send({ message: 'EL PRODUCTO NO EXISTE' });
-        }
-
-
-    } catch (e) {
-        console.log(e)
-        handleHttpError(res, "ERROR AL INTENTAR ELIMINAR EL PRODUCTO");
-    }
-
 };
 
-module.exports = { getItems, getItem, createItemVenta, updateItem, deleteItem, getID, getCodigo, createItemDetalleVenta };
+const getFacturaImpresa = async(req, res) => {
+    const { body } = req
+    try {
+        const data = await facturaImpresaModel.findOne({
+            where: { Venta_ID: body.Venta_ID }
+        });
+
+        //ocultarPassword(user);
+        res.send(data);
+    } catch (e) {
+        handleHttpError(res, `ERROR AL OBTENER LA FACTURA IMPRESA DE LA DB ${e}`);
+    }
+};
+
+module.exports = { getItems, getItem, createItemVenta, getID, getCodigo, createItemDetalleVenta, createFacturaImpresa, getItemsVentaDetalle, getFacturaImpresa };

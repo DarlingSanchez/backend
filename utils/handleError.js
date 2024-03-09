@@ -8,6 +8,7 @@ const handleHttpError = (res, error) => {
 
 const handleErrorResponse = (res, message = "Algo ocurrio", code = 401) => {
     console.log("Error", message);
+    writeToLog("handleErrorResponse" + message)
     res.status(code);
     res.send({ error: message });
 };

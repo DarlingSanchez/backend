@@ -48,5 +48,18 @@ const getItemsUnidadesMedidas = async(req, res) => {
 
 };
 
+//OBETENER TODAS LAS UNIDADES_MEDIDAS
+const obtenerUsuario = async(req, res) => {
+    try {
+        const user = req.user
+            //const usuario = await 
+        ocultarPassword(user);
+        res.send(user);
+    } catch (e) {
+        handleHttpError(res, e);
+    }
 
-module.exports = { getItemsCategorias, getItemsImpuestos, getItemsUnidadesMedidas };
+};
+
+
+module.exports = { getItemsCategorias, getItemsImpuestos, getItemsUnidadesMedidas, obtenerUsuario };

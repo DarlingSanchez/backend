@@ -1,15 +1,16 @@
 const express = require("express");
 const router = express.Router();
 const { validateObjectDataCreate, validateId } = require("../validators/productos")
-const { getItemsCategorias, getItemsImpuestos, getItemsUnidadesMedidas } = require("../controllers/tablasfk")
+const { getItemsCategorias, getItemsImpuestos, getItemsUnidadesMedidas, obtenerUsuario } = require("../controllers/tablasfk")
 const checkAuth = require('../middleware/auth');
 const checkRoleAuth = require('../middleware/rol')
 
 //CATEGORIAS
-router.get("/categorias/", checkAuth, checkRoleAuth([1]), getItemsCategorias);
+router.get("/categorias/", checkAuth, getItemsCategorias);
 
 //IMPUESTOS
-router.get("/impuestos/", checkAuth, checkRoleAuth([1]), getItemsImpuestos);
-router.get("/unidades-medidas/", checkAuth, checkRoleAuth([1]), getItemsUnidadesMedidas);
+router.get("/impuestos/", checkAuth, getItemsImpuestos);
+router.get("/get-usuario/", checkAuth, obtenerUsuario);
+router.get("/unidades-medidas/", checkAuth, getItemsUnidadesMedidas);
 
 module.exports = router;

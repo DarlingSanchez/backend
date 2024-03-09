@@ -62,6 +62,7 @@ const getItems = async(req, res) => {
                 Categoria: item.Categoria.NombreCategoria,
                 Stock: parseFloat(item.Stock), // Convierte a número
                 PrecioVenta: parseFloat(item.PrecioVenta), // Convierte a número
+                PrecioVentaMayoreo: parseFloat(item.PrecioVentaMayoreo), // Convierte a número
                 Impuesto: parseFloat(item.Impuesto.Porcentaje), // Convierte a número
                 Activo: item.Activo,
                 Imagen: item.Archivo.Url,
@@ -89,7 +90,7 @@ const getItem = async(req, res) => {
                 as: 'Archivo',
                 attributes: ['Url'],
             }, ],
-            attributes: ['id', 'Codigo', 'NombreDelProducto', 'Categoria_ID', 'Descripcion', 'Stock', 'UM_ID', 'PrecioCompra', 'Impuesto_ID', 'PrecioVenta', 'Ganancia', 'Activo', 'Archivo_ID'],
+            attributes: ['id', 'Codigo', 'NombreDelProducto', 'Categoria_ID', 'Descripcion', 'Stock', 'UM_ID', 'PrecioCompra', 'Impuesto_ID', 'PrecioVenta', 'PrecioVentaMayoreo', 'Activo', 'Archivo_ID'],
         });
 
         const data = {
@@ -103,7 +104,7 @@ const getItem = async(req, res) => {
             PrecioCompra: dataRaw.PrecioCompra,
             Impuesto_ID: dataRaw.Impuesto_ID,
             PrecioVenta: dataRaw.PrecioVenta,
-            Ganancia: dataRaw.Ganancia,
+            PrecioVentaMayoreo: dataRaw.PrecioVentaMayoreo,
             Activo: dataRaw.Activo,
             Archivo_ID: dataRaw.Archivo_ID,
             Imagen: dataRaw.Archivo ? dataRaw.Archivo.Url : '', // Verificar si hay una imagen
@@ -139,7 +140,7 @@ const getCodigo = async(req, res) => {
                     attributes: ['Url'],
                 }
             ],
-            attributes: ['id', 'Codigo', 'NombreDelProducto', 'Descripcion', 'Stock', 'PrecioCompra', 'Impuesto_ID', 'PrecioVenta', 'Ganancia', 'Activo', 'Archivo_ID'],
+            attributes: ['id', 'Codigo', 'NombreDelProducto', 'Descripcion', 'Stock', 'PrecioCompra', 'Impuesto_ID', 'PrecioVenta', 'PrecioVentaMayoreo', 'Ganancia', 'Activo', 'Archivo_ID'],
         });
 
         if (dataRaw) {
@@ -152,7 +153,7 @@ const getCodigo = async(req, res) => {
                 PrecioCompra: dataRaw.PrecioCompra,
                 Impuesto: dataRaw.Impuesto.Porcentaje,
                 PrecioVenta: dataRaw.PrecioVenta,
-                Ganancia: dataRaw.Ganancia,
+                PrecioVentaMayoreo: dataRaw.PrecioVentaMayoreo,
                 Activo: dataRaw.Activo === 'S' ? true : false,
                 Archivo_ID: dataRaw.Archivo_ID,
                 Imagen: dataRaw.Archivo ? dataRaw.Archivo.Url : '', // Verificar si hay una imagen
@@ -225,7 +226,7 @@ const patchItemCompra = async(req, res) => {
                 Stock: stock,
                 PrecioCompra: producto.precioCompra,
                 PrecioVenta: producto.precioVenta,
-                Ganancia: ganancia
+                PrecioVentaMayoreo: producto.totalVentaMayoreo,
             };
 
             //return await detalleComprasModel.create(detalleCompraData);

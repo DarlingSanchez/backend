@@ -1,7 +1,8 @@
 const { Categorias, Impuestos, Unidades_Medidas } = require('./mysql/tablasfk');
 const { Compras, DetalleCompras } = require('./mysql/compras')
 const { Ventas, DetalleVentas } = require('./mysql/ventas')
-const { DetallePagos, DatosPago } = require('./mysql/pagos')
+const { Datos_Factura, Factura_Impresa } = require('./mysql/factura')
+const { MetodosPago, DetallePagos, DatosPago } = require('./mysql/pagos')
 
 const models = {
     categoriasModel: Categorias,
@@ -17,8 +18,12 @@ const models = {
     detalleComprasModel: DetalleCompras,
     ventasModel: Ventas,
     detalleVentasModel: DetalleVentas,
+    metodosPagoModel: MetodosPago,
     detallePagosModel: DetallePagos,
-    datosPagosModel: DatosPago
+    datosPagosModel: DatosPago,
+    empresaModel: require('./mysql/empresa'),
+    facturaModel: Datos_Factura,
+    facturaImpresaModel: Factura_Impresa,
 };
 
 

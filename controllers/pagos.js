@@ -23,7 +23,23 @@ const createDetallePago = async(req, res) => {
         // Esperar a que todas las operaciones de creación se completen
         const detallePagoResults = await Promise.all(detallePagoPromises);
 
-        res.send(detallePagoResults);
+        // Asegúrate de que los campos numéricos se envíen como números en lugar de cadenas
+        const data = detallePagoResults.map(item => {
+            let nombre = ''
+            if (item.MetodoPago_ID == 1) {
+                nombre = "Efectivo"
+            } else if (item.MetodoPago_ID == 2) {
+                nombre = "Tarjeta"
+            } else {
+                nombre = "Transferencia"
+            }
+            return {
+                NombreMetodo: nombre,
+                Monto: item.MontoPago
+            };
+        });
+
+        res.send(data);
 
     } catch (e) {
         handleHttpError(res, `ERROR AL GUARDAR EL DETALLE DEL PAGO ${e}`);

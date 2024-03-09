@@ -10,7 +10,7 @@ const validateObjectDataCreate = [
     check("PrecioCompra").exists().notEmpty().isDecimal(),
     check("Impuesto_ID").exists().notEmpty().isInt(),
     check("PrecioVenta").exists().notEmpty().isDecimal(),
-    check("Ganancia").exists().notEmpty().isDecimal(),
+    check("PrecioVentaMayoreo").exists().notEmpty().isDecimal(),
     check("Activo").exists().notEmpty().isLength({ min: 1, max: 1 }),
     check("Archivo_ID").exists().notEmpty(),
     (req, res, next) => {
@@ -29,7 +29,7 @@ const validateObjectDataUpdate = [
     check("PrecioCompra").exists().notEmpty().isDecimal(),
     check("Impuesto_ID").exists().notEmpty().isInt(),
     check("PrecioVenta").exists().notEmpty().isDecimal(),
-    check("Ganancia").exists().notEmpty().isDecimal(),
+    check("PrecioVentaMayoreo").exists().notEmpty().isDecimal(),
     check("Activo").exists().notEmpty().isLength({ min: 1, max: 1 }),
     check("Archivo_ID").exists().notEmpty(),
     (req, res, next) => {

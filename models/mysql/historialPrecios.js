@@ -15,6 +15,10 @@ const HistorialPrecios = sequelize.define(
             type: DataTypes.DECIMAL,
             allowNull: false,
         },
+        PrecioVentaMayoreo: {
+            type: DataTypes.DECIMAL,
+            allowNull: false,
+        },
     }, {
         timestamps: true,
     }
